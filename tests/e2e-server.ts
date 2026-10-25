@@ -38,7 +38,14 @@ const app = await createApp({
     CREDENTIAL_ENCRYPTION_KEY: 'a'.repeat(64),
   }),
   github: {
-    async exchange() {
+    async exchange(code) {
+      if (code === 'account-test')
+        return {
+          id: 202,
+          login: 'account-writer',
+          name: 'Account Writer',
+          avatar_url: 'https://avatars.githubusercontent.com/u/202',
+        };
       return {
         id: 101,
         login: 'writer',

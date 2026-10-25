@@ -38,6 +38,34 @@ export function authRoutes(app: FastifyInstance, db: Database, config: Config, g
     user: await currentUser(db, request),
     loginConfigured: Boolean(config.GITHUB_CLIENT_ID && config.GITHUB_CLIENT_SECRET),
   }));
+  app.get('/api/account', async (request) => {
+    const user = await requireUser(db, request);
+    const { rows } = await db.query<{ sources: number; files: number; posts: number }>(
+      `SELECT (SELECT count(*)::int FROM sources WHERE user_id=$1) AS sources,
+       (SELECT count(*)::int FROM files f JOIN sources s ON s.id=f.source_id WHERE s.user_id=$1) AS files,
+       (SELECT count(*)::int FROM posts p JOIN sources s ON s.id=p.source_id WHERE s.user_id=$1) AS posts`,
+      [user.id],
+    );
+    return { user, ...rows[0] };
+  });
+  app.delete('/api/account', async (request, reply) => {
+    const user = await requireUser(db, request);
+    const { confirmation } = z
+      .object({ confirmation: z.string().max(100) })
+      .strict()
+      .parse(request.body);
+    await db.transaction(async (tx) => {
+      // Serialize deletion with account creation/update, then recheck the original session.
+      await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [user.id]);
+      const current = await requireUser(tx, request);
+      if (confirmation !== current.login)
+        throw new HttpError(400, '请输入当前 GitHub 用户名确认注销');
+      await tx.query('DELETE FROM users WHERE id=$1', [current.id]);
+    });
+    // Never clear a working session or report success if the transaction rolls back.
+    reply.clearCookie('session', cookieOptions);
+    return { ok: true };
+  });
   app.get(
     '/auth/github',
     { config: { rateLimit: { max: 15, timeWindow: '1 minute' } } },
