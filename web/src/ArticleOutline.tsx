@@ -45,6 +45,9 @@ export function ArticleOutline({
         if (heading.getBoundingClientRect().top <= threshold) current = heading.id;
         else break;
       }
+      if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+        current = headings.at(-1)?.id || current;
+      }
       setActive(current);
     };
     const schedule = () => {

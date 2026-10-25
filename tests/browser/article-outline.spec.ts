@@ -121,3 +121,36 @@ test('articles without headings omit the sidebar', async ({ page }) => {
   await expect(page.locator('.markdown-body')).toHaveText('A paragraph.');
   await expect(page.locator('.article-outline')).toHaveCount(0);
 });
+
+test('the short final chapter becomes active at the bottom of the article', async ({ page }) => {
+  const markdown = [
+    '# Start',
+    ...Array.from({ length: 25 }, () => 'Long article paragraph.'),
+    '## End',
+    'Brief ending.',
+  ].join('\n\n');
+  await page.route('**/api/posts/short-end', (route) =>
+    route.fulfill({
+      json: {
+        post: {
+          id: 'short-end',
+          title: 'Short ending',
+          format: 'markdown',
+          markdown,
+          published_at: '2026-10-25T00:00:00Z',
+          name: 'Writer',
+          login: 'writer',
+          avatar_url: 'https://avatars.githubusercontent.com/u/101',
+          source_name: 'notes',
+        },
+      },
+    }),
+  );
+  await page.goto('/p/short-end');
+  const link = page
+    .getByRole('navigation', { name: '侧栏目录' })
+    .getByRole('link', { name: 'End', exact: true });
+  await link.click();
+  await expect(link).toHaveAttribute('aria-current', 'location');
+  await expect(page.locator('.markdown-body h2')).toBeInViewport();
+});

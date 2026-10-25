@@ -71,4 +71,4 @@ tests/uploads.test.ts 通过真实 HTTP 慢速流上传非法路径与后续二�
 
 remarkToc 在阅读 AST 上为标题分配唯一 ID，并把顶层独占段落的 [TOC] 转为带可访问名称的 nav 与嵌套列表；不向发布快照写入 HTML。目录链接使用纯文本与编码后的本地片段，沿用默认 URL 安全过滤。Article 在内容加载后及 hashchange 时处理片段定位，以支持首次打开和刷新。测试需覆盖发布字符串化后的标记、中文/重复/跳级标题、脚注隔离、代码原文、实际点击及延迟加载后的锚点。
 
-侧栏章节导航从真实 Markdown DOM 上由 remarkToc 标注的标题读取层级与文字，和文内 `[TOC]` 共享锚点，不重新解析文章。ArticleOutline 使用带清理的滚动/尺寸监听与 requestAnimationFrame 更新章节高亮；脚注标题不标注。窄屏折叠与固定目录使用语义 details/summary 和链接。新增测试应同时验证滚动位置、当前章节和原有脚注导航。
+侧栏章节导航从真实 Markdown DOM 上由 remarkToc 标注的标题读取层级与文字，和文内 `[TOC]` 共享锚点，不重新解析文章。ArticleOutline 使用带清理的滚动/尺寸监听与 requestAnimationFrame 更新章节高亮；滚到文章末尾时标记最后一章，即使短末章无法滚到视口顶部。脚注标题不标注。窄屏折叠与固定目录使用语义 details/summary 和链接。新增测试应同时验证滚动位置、当前章节和原有脚注导航。
