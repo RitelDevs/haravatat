@@ -60,4 +60,4 @@ Markdown 阅读支持 [TOC] 分级目录；点击目录或脚注链接在当前�
 
 `web/public/appearance.js` 在应用和样式加载前解析偏好，尽量避免错误配色闪烁。`Appearance.tsx` 负责切换和系统变化监听。`styles.css` 的 `--background`、`--text`、`--surface`、`--surface-soft`、`--green`、`--muted`、`--line` 及错误、焦点变量覆盖公开页、工作台与 Markdown；新增界面应复用这些语义变量。KaTeX 继承正文颜色，代码块、高亮与 alert 使用对应配色。
 
-Typst PDF 保留编译文档本来的纸张、文字和图片颜色，始终不反色；周围界面跟随选择。这样不会改变公式、插图或作者指定的颜色。
+Typst PDF 保留编译文档本来的纸张、文字和图片颜色，始终不反色；周围界面和加载提示跟随选择；白色 PDF 页面内的错误提示始终使用深色文字。这样不会改变公式、插图或作者指定的颜色。

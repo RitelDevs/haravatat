@@ -1064,7 +1064,7 @@ em {
 }
 .pdf-reader {
   width: 100%;
-  background: white;
+  background: var(--background);
 }
 .pdf-page {
   position: relative;
@@ -1097,7 +1097,7 @@ em {
   position: absolute;
   inset: 20px;
   z-index: 3;
-  color: var(--danger);
+  color: #994e43;
   font-size: 12px;
 }
 .pdf-reader .notice {
