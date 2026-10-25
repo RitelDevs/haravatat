@@ -1,3 +1,4 @@
+import { t, useLanguage, LanguageSelector, message } from './i18n';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { BrowserRouter, Link, NavLink, Route, Routes } from 'react-router-dom';
 import { api, type User, errorMessage } from './api';
@@ -12,6 +13,10 @@ const Auth = createContext<{
 }>({ user: null, loading: true, configured: false, refresh: async () => {} });
 export const useAuth = () => useContext(Auth);
 export function App() {
+  const locale = useLanguage();
+  useEffect(() => {
+    if (!location.pathname.startsWith('/p/')) document.title = t('Haravatat · 知识与文字');
+  }, [locale]);
   const [user, setUser] = useState<User | null>(null),
     [loading, setLoading] = useState(true),
     [configured, setConfigured] = useState(false),
@@ -44,33 +49,35 @@ export function App() {
       <BrowserRouter>
         <header className="site-header">
           <div className="header-inner">
-            <Link className="brand" to="/" aria-label="Haravatat 首页">
+            <Link className="brand" to="/" aria-label={t('Haravatat 首页')}>
               <span className="brand-symbol">h.</span>
               <span>
-                Haravatat<small>知识与文字</small>
+                Haravatat<small>{t('知识与文字')}</small>
               </span>
             </Link>
             <nav>
               <NavLink to="/" end>
-                发现
+                {t('发现')}
               </NavLink>
-              <NavLink to="/dashboard">我的工作台</NavLink>
+              <NavLink to="/dashboard">{t('我的工作台')}</NavLink>
             </nav>
+            <LanguageSelector />
             <Appearance />
             <div className="account">
               {loading ? (
-                <span className="muted">连接中…</span>
+                <span className="muted">{t('连接中…')}</span>
               ) : user ? (
                 <>
                   <img src={user.avatar_url} alt="" />
                   <span className="account-name">{user.login}</span>
                   <button className="text-button" onClick={logout}>
-                    退出
+                    {t('退出')}
                   </button>
                 </>
               ) : (
                 <a className="button small" href="/auth/github">
-                  GitHub 登录 <span aria-hidden="true">↗</span>
+                  {t('GitHub 登录 ')}
+                  <span aria-hidden="true">↗</span>
                 </a>
               )}
             </div>
@@ -78,7 +85,7 @@ export function App() {
         </header>
         {error && (
           <div className="global-error" role="alert">
-            {error} <button onClick={refresh}>重新连接</button>
+            {message(error)} <button onClick={refresh}>{t('重新连接')}</button>
           </div>
         )}
         <Routes>
@@ -89,15 +96,15 @@ export function App() {
             path="*"
             element={
               <main className="page empty">
-                <h1>页面不存在</h1>
-                <Link to="/">返回首页</Link>
+                <h1>{t('页面不存在')}</h1>
+                <Link to="/">{t('返回首页')}</Link>
               </main>
             }
           />
         </Routes>
         <footer className="site-footer">
           <span>Haravatat</span>
-          <span>写下思考，让知识相遇。</span>
+          <span>{t('写下思考，让知识相遇。')}</span>
           <span>Typst & Markdown</span>
         </footer>
       </BrowserRouter>

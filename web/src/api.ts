@@ -1,3 +1,4 @@
+import { t, language, number, message } from './i18n';
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -17,6 +18,7 @@ export async function api<T>(
     signal: options.signal,
     headers: {
       'X-Haravatat-Request': '1',
+      'Accept-Language': language(),
       ...(!multipart && options.body ? { 'Content-Type': 'application/json' } : {}),
     },
     body: options.body
@@ -26,7 +28,7 @@ export async function api<T>(
       : undefined,
   });
   const result = await response.json();
-  if (!response.ok) throw new ApiError(response.status, result.error ?? '请求失败');
+  if (!response.ok) throw new ApiError(response.status, result.error ?? t('请求失败'));
   return result as T;
 }
 
@@ -41,17 +43,18 @@ export function uploadFiles(
     request.timeout = 300_000;
     request.responseType = 'json';
     request.setRequestHeader('X-Haravatat-Request', '1');
+    request.setRequestHeader('Accept-Language', language());
     request.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(event.loaded, event.total);
     };
     request.onload = () => {
       if (request.status >= 200 && request.status < 300) resolve();
-      else reject(new ApiError(request.status, request.response?.error || '上传失败，请重试。'));
+      else reject(new ApiError(request.status, request.response?.error || t('上传失败，请重试。')));
     };
     request.onerror = () =>
-      reject(new Error('上传连接中断，请检查网络后重试；服务器上的草稿可能尚未更新。'));
-    request.ontimeout = () => reject(new Error('上传超过 5 分钟，请检查连接速度后重试。'));
-    request.onabort = () => reject(new Error('上传已取消。'));
+      reject(new Error(t('上传连接中断，请检查网络后重试；服务器上的草稿可能尚未更新。')));
+    request.ontimeout = () => reject(new Error(t('上传超过 5 分钟，请检查连接速度后重试。')));
+    request.onabort = () => reject(new Error(t('上传已取消。')));
     request.send(body);
   });
 }
@@ -102,12 +105,12 @@ export interface Workspace {
   posts: { id: string; entry_path: string; title: string; source_revision: number }[];
 }
 export function date(value: string) {
-  return new Intl.DateTimeFormat('zh-CN', {
+  return new Intl.DateTimeFormat(language(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   }).format(new Date(value));
 }
 export function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : '操作失败，请重试';
+  return error instanceof Error ? message(error.message) : t('操作失败，请重试');
 }

@@ -8,6 +8,7 @@ export default defineConfig({
   use: {
     baseURL: production ? apiOrigin : 'http://127.0.0.1:5173',
     headless: true,
+    locale: 'zh-CN',
     viewport: { width: 1440, height: 1050 },
   },
   webServer: production
