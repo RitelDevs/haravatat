@@ -23,7 +23,7 @@ export function Home() {
     setLoading(true);
     setError('');
     api<{ posts: Post[]; hasMore: boolean }>(
-      `/api/posts?page=${number(page)}${author ? `&author=${encodeURIComponent(author)}` : ''}`,
+      `/api/posts?page=${page}${author ? `&author=${encodeURIComponent(author)}` : ''}`,
       { signal: controller.signal },
     )
       .then((result) => {

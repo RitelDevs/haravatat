@@ -5,6 +5,7 @@ import { preferredLanguage, translate, translateMessage } from '../shared/i18n.j
 test('language fallback and message parameters preserve paths and diagnostics', () => {
   assert.equal(preferredLanguage('fr-FR,en-US;q=0.9'), 'en');
   assert.equal(preferredLanguage('de-DE'), 'zh-CN');
+  assert.equal(preferredLanguage('en;q=0.1,zh-CN;q=1'), 'zh-CN');
   assert.equal(preferredLanguage('en;q=0,zh-CN;q=0.8'), 'zh-CN');
   assert.equal(translate('尚未翻译', [], 'en'), '尚未翻译');
   assert.equal(translate('发布 {0}', ['中文/a.md'], 'en'), 'Publish 中文/a.md');
@@ -57,4 +58,23 @@ test('HTTP errors use requested language while retaining protection and status c
     await app.close();
     await close();
   }
+});
+
+test('nested application statuses switch language without translating filenames or diagnostics', () => {
+  assert.equal(
+    translateMessage(
+      'Files uploaded. Select entries and publish to update public articles. Skipped 3 hidden files.',
+      'zh-CN',
+    ),
+    '文件已上传。勾选入口后发布，线上文章才会更新。 已跳过 3 个隐藏文件。',
+  );
+  assert.equal(
+    translateMessage('自动同步未完成：仓库认证信息无效。已保留上次快照，可手动重试。', 'en'),
+    'Automatic sync failed: Invalid repository credentials. The previous snapshot is preserved; retry manually.',
+  );
+  assert.equal(
+    translateMessage('入口不是有效的 Typst / Markdown 文件：删除', 'en'),
+    'Entry is not a valid Typst / Markdown file: 删除',
+  );
+  assert.equal(translateMessage('Typst 编译失败：删除', 'en'), 'Typst compilation failed: 删除');
 });

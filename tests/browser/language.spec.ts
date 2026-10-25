@@ -72,3 +72,10 @@ test('dashboard language switch preserves drafts and localizes validation and se
     'Destination path already exists',
   );
 });
+
+test('localized page numbers never enter API query parameters', async ({ page }) => {
+  await page.goto('/?page=1000');
+  await expect(page.getByRole('heading', { name: '故事从第一篇开始' })).toBeVisible();
+  await expect(page.locator('.pagination')).toContainText('1,000');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
