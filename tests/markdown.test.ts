@@ -179,7 +179,7 @@ test('TOC expands only standalone top-level markers and titles have anchors with
     ].join('\n\n'),
   );
   assert(!html.includes('markdown-toc'));
-  assert.match(html, /<h1 id="heading-heading">Heading<\/h1>/);
+  assert.match(html, /<h1 id="heading-heading"[^>]*>Heading<\/h1>/);
   assert.match(html, /<code>\[TOC\]<\/code>/);
   assert.match(html, /<blockquote>\n<p>\[TOC\]<\/p>/);
   assert(!publishAndRead('[TOC]').html.includes('markdown-toc'));

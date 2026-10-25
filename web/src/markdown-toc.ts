@@ -63,7 +63,7 @@ export const remarkToc: Plugin<[], Root> = () => (tree) => {
     while (used.has(id)) id = `${base}-${++suffix}`;
     used.add(id);
     heading.data ||= {};
-    heading.data.hProperties = { ...heading.data.hProperties, id };
+    heading.data.hProperties = { ...heading.data.hProperties, id, 'data-outline-title': title };
     const entry: Entry = { depth: heading.depth, title, id, children: [] };
     while (stack.length && stack.at(-1)!.depth >= entry.depth) stack.pop();
     (stack.at(-1)?.children || outline).push(entry);

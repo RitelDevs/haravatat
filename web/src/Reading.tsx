@@ -1,6 +1,7 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Markdown, { defaultUrlTransform } from 'react-markdown';
+import { ArticleOutline } from './ArticleOutline';
 import { markdownPlugins, htmlPlugins } from './markdown-config';
 import 'katex/dist/katex.min.css';
 import { api, type Post, date, errorMessage } from './api';
@@ -160,6 +161,7 @@ export function Home() {
   );
 }
 export function Article() {
+  const article = useRef<HTMLElement>(null);
   const { id } = useParams(),
     [post, setPost] = useState<Post | null>(null),
     [error, setError] = useState('');
@@ -196,9 +198,12 @@ export function Article() {
       }
     };
     // Article content arrives after the browser's initial fragment lookup.
-    scrollToFragment();
+    const frame = requestAnimationFrame(scrollToFragment);
     window.addEventListener('hashchange', scrollToFragment);
-    return () => window.removeEventListener('hashchange', scrollToFragment);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('hashchange', scrollToFragment);
+    };
   }, [post, id]);
   return (
     <main className="article-page">
@@ -240,31 +245,34 @@ export function Article() {
               <PdfReader url={`/api/posts/${post.id}/pdf`} />
             </Suspense>
           ) : (
-            <article className="markdown-body">
-              <Markdown
-                remarkPlugins={markdownPlugins}
-                rehypePlugins={htmlPlugins}
-                skipHtml
-                urlTransform={(url) => {
-                  const safe = defaultUrlTransform(url);
-                  if (/^\/\//.test(safe)) return '';
-                  return safe;
-                }}
-                components={{
-                  a: ({ node: _node, children, href, ...props }) =>
-                    href ? (
-                      <a {...props} href={href} rel="noopener noreferrer">
-                        {children}
-                      </a>
-                    ) : (
-                      <span className="muted">{children}</span>
-                    ),
-                  img: ({ alt, ...props }) => <img {...props} alt={alt || ''} loading="lazy" />,
-                }}
-              >
-                {post.markdown}
-              </Markdown>
-            </article>
+            <div className="article-layout">
+              <ArticleOutline article={article} contentKey={post.id} />
+              <article className="markdown-body" ref={article}>
+                <Markdown
+                  remarkPlugins={markdownPlugins}
+                  rehypePlugins={htmlPlugins}
+                  skipHtml
+                  urlTransform={(url) => {
+                    const safe = defaultUrlTransform(url);
+                    if (/^\/\//.test(safe)) return '';
+                    return safe;
+                  }}
+                  components={{
+                    a: ({ node: _node, children, href, ...props }) =>
+                      href ? (
+                        <a {...props} href={href} rel="noopener noreferrer">
+                          {children}
+                        </a>
+                      ) : (
+                        <span className="muted">{children}</span>
+                      ),
+                    img: ({ alt, ...props }) => <img {...props} alt={alt || ''} loading="lazy" />,
+                  }}
+                >
+                  {post.markdown}
+                </Markdown>
+              </article>
+            </div>
           )}
         </>
       )}
