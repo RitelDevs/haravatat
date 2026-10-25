@@ -47,9 +47,9 @@ test('account confirmation cancels safely, handles failure and deletes only the 
   await page
     .getByRole('button', { name: 'Permanently delete my site account', exact: true })
     .click();
-  await expect(page.getByRole('status')).toContainText(
-    'Your site account and associated data have been deleted.',
-  );
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Your site account and associated data' }),
+  ).toContainText('Your site account and associated data have been deleted.');
   await expect(page.getByRole('link', { name: 'Account settings', exact: true })).toHaveCount(0);
   await page.getByRole('link', { name: 'Sign in with GitHub', exact: true }).click();
   await page.getByRole('link', { name: 'Account settings', exact: true }).click();
