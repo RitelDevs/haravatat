@@ -5,6 +5,7 @@ import { api, type User, errorMessage } from './api';
 import { Home, Article } from './Reading';
 import { Appearance } from './Appearance';
 import { Dashboard } from './Dashboard';
+import { Account } from './Account';
 const Auth = createContext<{
   user: User | null;
   loading: boolean;
@@ -69,9 +70,11 @@ export function App() {
               ) : user ? (
                 <>
                   <img src={user.avatar_url} alt="" />
-                  <span className="account-name">{user.login}</span>
+                  <Link className="account-link" to="/account" aria-label={t('账号管理')}>
+                    {t('账号管理')}
+                  </Link>
                   <button className="text-button" onClick={logout}>
-                    {t('退出')}
+                    {t('退出登录')}
                   </button>
                 </>
               ) : (
@@ -88,9 +91,15 @@ export function App() {
             {message(error)} <button onClick={refresh}>{t('重新连接')}</button>
           </div>
         )}
+        {new URLSearchParams(location.search).get('account') === 'deleted' && (
+          <div className="global-error" role="status">
+            {t('本站账号及关联数据已删除。再次登录将创建空白账号。')}
+          </div>
+        )}
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/account" element={<Account />} />
           <Route path="/p/:id" element={<Article />} />
           <Route
             path="*"

@@ -289,5 +289,22 @@
   "语言": "Language",
   "请填写此字段。": "Please fill out this field.",
   "请输入有效值。": "Please enter a valid value.",
-  "日期格式": "Date format"
+  "日期格式": "Date format",
+  "账号管理": "Account settings",
+  "退出登录": "Sign out",
+  "GitHub 身份": "GitHub identity",
+  "用户名": "Username",
+  "显示名称": "Display name",
+  "用户名、名称及头像来自 GitHub，下次登录时更新。": "Your username, name and avatar come from GitHub and update when you sign in again.",
+  "本站数据：{0} 个工作区，{1} 个文件，{2} 篇文章。": "Site data: {0} sources, {1} files, {2} articles.",
+  "注销账号": "Delete account",
+  "注销本站账号": "Delete my site account",
+  "退出登录仅结束当前会话。注销账号将永久删除全部工作区、源文件、文章、文章资源和保存的仓库凭据，并使全部会话失效。": "Signing out ends only this session. Deleting your account permanently removes all sources, source files, articles, article assets and saved repository credentials, and revokes every session.",
+  "公开文章及资源立即下线；已被他人下载的副本无法收回。GitHub 账号及远程仓库不受影响。再次登录将创建空白账号。": "Public articles and assets become unavailable immediately; copies already downloaded by others cannot be recalled. Your GitHub account and remote repositories are unaffected. Signing in again creates an empty account.",
+  "此操作无法撤销。输入 GitHub 用户名 {0} 确认注销。": "This cannot be undone. Enter your GitHub username {0} to confirm deletion.",
+  "确认用户名": "Confirm username",
+  "正在注销…": "Deleting account…",
+  "永久删除本站账号": "Permanently delete my site account",
+  "请输入当前 GitHub 用户名确认注销": "Enter your current GitHub username to confirm deletion",
+  "本站账号及关联数据已删除。再次登录将创建空白账号。": "Your site account and associated data have been deleted. Signing in again creates an empty account."
 }

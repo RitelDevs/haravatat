@@ -109,6 +109,7 @@ export async function sourceRoutes(
     const id = randomUUID();
     await db.transaction(async (tx) => {
       await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [user.id]);
+      await requireUser(tx, request);
       if ((await tx.query('SELECT id FROM sources WHERE user_id=$1', [user.id])).rows.length >= 20)
         throw new HttpError(413, '每个用户最多 20 个工作区');
       await tx.query(
