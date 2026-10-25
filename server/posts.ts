@@ -1,3 +1,4 @@
+import { readBlogTheme } from '../shared/blog-theme.js';
 import { randomUUID } from 'node:crypto';
 import { posix } from 'node:path';
 import type { FastifyInstance } from 'fastify';
@@ -132,15 +133,21 @@ export function postRoutes(app: FastifyInstance, db: Database, compiler: Compile
   });
   app.get('/api/posts/:id', async (request) => {
     const id = sourceId(request.params);
-    const { rows } = await db.query<{ id: string; format: string; content: Buffer }>(
-      'SELECT p.*,u.login,u.name,u.avatar_url,s.name AS source_name FROM posts p JOIN sources s ON s.id=p.source_id JOIN users u ON u.id=s.user_id WHERE p.id=$1',
+    const { rows } = await db.query<{
+      id: string;
+      format: string;
+      content: Buffer;
+      theme_settings: unknown;
+    }>(
+      'SELECT p.*,u.login,u.name,u.avatar_url,s.name AS source_name,t.settings AS theme_settings FROM posts p JOIN sources s ON s.id=p.source_id JOIN users u ON u.id=s.user_id LEFT JOIN blog_themes t ON t.user_id=u.id WHERE p.id=$1',
       [id],
     );
     if (!rows[0]) throw new HttpError(404, '文章不存在或已取消发布');
-    const { content, ...post } = rows[0];
+    const { content, theme_settings, ...post } = rows[0];
     return {
       post: {
         ...post,
+        theme: readBlogTheme(theme_settings),
         markdown: post.format === 'markdown' ? Buffer.from(content).toString('utf8') : undefined,
       },
     };

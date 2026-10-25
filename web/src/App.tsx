@@ -5,6 +5,7 @@ import { api, type User, errorMessage } from './api';
 import { Home, Article } from './Reading';
 import { Appearance } from './Appearance';
 import { Dashboard } from './Dashboard';
+import { BlogSettings } from './BlogSettings';
 import { Account } from './Account';
 const Auth = createContext<{
   user: User | null;
@@ -100,6 +101,7 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/account" element={<Account />} />
+          <Route path="/account/theme" element={<BlogSettings />} />
           <Route path="/p/:id" element={<Article />} />
           <Route
             path="*"
