@@ -1,3 +1,4 @@
+import { t, useLanguage, language, number, message } from './i18n';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from './App';
@@ -10,13 +11,14 @@ const isText = (path: string) =>
   /\.(typ|md|markdown|txt|json|csv|yaml|yml|toml|bib|css)$/i.test(path);
 const size = (bytes: number) =>
   bytes < 1024
-    ? `${bytes} B`
+    ? `${number(bytes)} B`
     : bytes < 1048576
-      ? `${(bytes / 1024).toFixed(1)} KiB`
+      ? `${number(bytes / 1024, { maximumFractionDigits: 1 })} KiB`
       : bytes < 1024 ** 3
-        ? `${(bytes / 1048576).toFixed(1)} MiB`
-        : `${(bytes / 1024 ** 3).toFixed(1)} GiB`;
+        ? `${number(bytes / 1048576, { maximumFractionDigits: 1 })} MiB`
+        : `${number(bytes / 1024 ** 3, { maximumFractionDigits: 1 })} GiB`;
 export function Dashboard() {
+  useLanguage();
   const { user, loading, configured } = useAuth();
   const [params, setParams] = useSearchParams(),
     sourceId = params.get('source');
@@ -118,12 +120,14 @@ export function Dashboard() {
             if (!synced.skipped)
               setSuccess(
                 synced.unchanged
-                  ? '自动同步完成，仓库没有新提交。'
-                  : '已自动同步仓库。重新发布后线上文章才会更新。',
+                  ? t('自动同步完成，仓库没有新提交。')
+                  : t('已自动同步仓库。重新发布后线上文章才会更新。'),
               );
           } catch (error) {
             if (!controller.signal.aborted)
-              setError(`自动同步未完成：${errorMessage(error)}。已保留上次快照，可手动重试。`);
+              setError(
+                t('自动同步未完成：{0}。已保留上次快照，可手动重试。', [errorMessage(error)]),
+              );
           } finally {
             if (!controller.signal.aborted) setAutomaticSyncing(false);
           }
@@ -185,7 +189,9 @@ export function Dashboard() {
         setCreating(false);
         setParams({ source: result.source.id });
       },
-      kind === 'git' ? '仓库来源已创建，点击同步以获取文件。' : '工作区已创建，可以上传文件了。',
+      kind === 'git'
+        ? t('仓库来源已创建，点击同步以获取文件。')
+        : t('工作区已创建，可以上传文件了。'),
     );
   };
   const upload = (files: FileList | null) => {
@@ -203,16 +209,17 @@ export function Dashboard() {
       async () => {
         setUploadProgress(null);
         if (!list.length)
-          throw new Error('没有可上传的文件：已忽略所有隐藏文件和文件夹。可取消勾选后重试。');
+          throw new Error(t('没有可上传的文件：已忽略所有隐藏文件和文件夹。可取消勾选后重试。'));
         const nextFiles = new Map(workspace?.files.map((file) => [file.path, file.size]));
         for (const file of list) {
           const path = [base, file.webkitRelativePath || file.name].filter(Boolean).join('/');
-          if (!validWorkspacePath(path)) throw new Error(`文件路径无效或超过 500 字符：${path}`);
+          if (!validWorkspacePath(path))
+            throw new Error(t('文件路径无效或超过 500 字符：{0}', [path]));
           nextFiles.set(path, file.size);
         }
-        if (nextFiles.size > MAX_FILES) throw new Error('每个工作区最多 1024 个文件。');
+        if (nextFiles.size > MAX_FILES) throw new Error(t('每个工作区最多 1024 个文件。'));
         if ([...nextFiles.values()].reduce((sum, bytes) => sum + bytes, 0) > MAX_SOURCE_BYTES)
-          throw new Error('工作区总大小最多 1 GiB。');
+          throw new Error(t('工作区总大小最多 1 GiB。'));
         const body = new FormData();
         for (const file of list)
           body.append(
@@ -232,7 +239,9 @@ export function Dashboard() {
           setUploadProgress(null);
         }
       },
-      `文件已上传。勾选入口后发布，线上文章才会更新。${skipped ? ` 已跳过 ${skipped} 个隐藏文件。` : ''}`,
+      t('文件已上传。勾选入口后发布，线上文章才会更新。{0}', [
+        skipped ? t(' 已跳过 {0} 个隐藏文件。', [skipped]) : '',
+      ]),
     ).finally(() => {
       if (fileInput.current) fileInput.current.value = '';
       if (folderInput.current) folderInput.current.value = '';
@@ -242,7 +251,10 @@ export function Dashboard() {
     if (
       !sourceId ||
       !window.confirm(
-        `删除${directory ? '文件夹及其全部草稿' : '草稿'} ${path}？已发布文章会保留到下次发布。`,
+        t('删除{0} {1}？已发布文章会保留到下次发布。', [
+          directory ? t('文件夹及其全部草稿') : t('草稿'),
+          path,
+        ]),
       )
     )
       return;
@@ -255,7 +267,7 @@ export function Dashboard() {
         await loadWorkspace(sourceId);
         await loadSources();
       },
-      '草稿已删除，线上文章尚未改变。',
+      t('草稿已删除，线上文章尚未改变。'),
     );
   };
   const publish = () => {
@@ -263,7 +275,7 @@ export function Dashboard() {
     if (
       !Object.keys(selected).length &&
       workspace?.posts.length &&
-      !window.confirm('这会取消此工作区全部文章的发布，继续吗？')
+      !window.confirm(t('这会取消此工作区全部文章的发布，继续吗？'))
     )
       return;
     void run(
@@ -282,8 +294,8 @@ export function Dashboard() {
         await loadSources();
       },
       Object.keys(selected).length
-        ? '发布成功，文章已出现在首页。'
-        : '已取消此工作区全部文章的发布。',
+        ? t('发布成功，文章已出现在首页。')
+        : t('已取消此工作区全部文章的发布。'),
     );
   };
   const openEditor = (path: string) => {
@@ -294,7 +306,7 @@ export function Dashboard() {
         const response = await fetch(
           `/api/sources/${sourceId}/file?path=${encodeURIComponent(path)}`,
         );
-        if (!response.ok) throw new Error('读取文件失败');
+        if (!response.ok) throw new Error(t('读取文件失败'));
         setEditor({ path, original: path, content: await response.text() });
       },
       '',
@@ -303,7 +315,7 @@ export function Dashboard() {
   if (loading)
     return (
       <main className="page empty" role="status">
-        正在连接工作台…
+        {t('正在连接工作台…')}
       </main>
     );
   if (!user)
@@ -311,24 +323,24 @@ export function Dashboard() {
       <main className="page login-page">
         <p className="eyebrow">YOUR WRITING SPACE</p>
         <h1>
-          你的文字，
+          {t('你的文字，')}
           <br />
-          <em>从这里出发。</em>
+          <em>{t('从这里出发。')}</em>
         </h1>
         <p>
-          通过 GitHub 登录，管理自己的仓库与文件，
+          {t('通过 GitHub 登录，管理自己的仓库与文件，')}
           <br />
-          选择想分享的内容，发布为 Typst 或 Markdown 文章。
+          {t('选择想分享的内容，发布为 Typst 或 Markdown 文章。')}
         </p>
         {configured ? (
           <a className="button" href="/auth/github">
-            通过 GitHub 登录 ↗
+            {t('通过 GitHub 登录 ↗')}
           </a>
         ) : (
-          <div className="notice">GitHub 登录尚未配置，请联系站点管理员。</div>
+          <div className="notice">{t('GitHub 登录尚未配置，请联系站点管理员。')}</div>
         )}
         <Link className="back-link" to="/">
-          先阅读文章 →
+          {t('先阅读文章 →')}
         </Link>
       </main>
     );
@@ -343,35 +355,41 @@ export function Dashboard() {
         <div>
           <p className="eyebrow">YOUR WRITING SPACE</p>
           <h1>
-            我的工作台<span className="muted"> / {user.login}</span>
+            {t('我的工作台')}
+            <span className="muted"> / {user.login}</span>
           </h1>
         </div>
         <button className="button" disabled={Boolean(busy)} onClick={() => setCreating(true)}>
-          ＋ 新建来源
+          {t('＋ 新建来源')}
         </button>
       </div>
       {error && (
         <div className="notice error" role="alert">
-          <strong>操作未完成</strong>
-          <pre>{error}</pre>
+          <strong>{t('操作未完成')}</strong>
+          <pre>{message(error)}</pre>
         </div>
       )}
       {success && (
         <div className="notice success" role="status">
-          {success}
+          {message(success)}
         </div>
       )}
       {busy && (
         <div className="notice" role="status">
           {busy === '上传' && uploadProgress ? (
             uploadProgress.loaded === uploadProgress.total ? (
-              '文件已传输，正在保存到工作区…'
+              t('文件已传输，正在保存到工作区…')
             ) : (
-              `正在上传… ${Math.floor((uploadProgress.loaded / uploadProgress.total) * 100)}%（${size(uploadProgress.loaded)} / ${size(uploadProgress.total)}）`
+              t('正在上传… {0}%（{1} / {2}）', [
+                Math.floor((uploadProgress.loaded / uploadProgress.total) * 100),
+                size(uploadProgress.loaded),
+                size(uploadProgress.total),
+              ])
             )
           ) : (
             <>
-              正在{busy}…{busy === '发布' && ' Typst 编译可能需要一些时间，请保留当前页面。'}
+              {t('正在')}
+              {t(busy)}…{busy === '发布' && t(' Typst 编译可能需要一些时间，请保留当前页面。')}
             </>
           )}
         </div>
@@ -379,10 +397,11 @@ export function Dashboard() {
       <div className="workspace-layout">
         <aside className="source-sidebar">
           <div className="sidebar-label">
-            内容来源 <span>{sources.length}/20</span>
+            {t('内容来源 ')}
+            <span>{number(sources.length)}/20</span>
           </div>
           {!sources.length && (
-            <p className="sidebar-empty">添加一个仓库或工作区，开始整理你的文章。</p>
+            <p className="sidebar-empty">{t('添加一个仓库或工作区，开始整理你的文章。')}</p>
           )}
           {sources.map((item) => (
             <button
@@ -399,30 +418,31 @@ export function Dashboard() {
                 <small>
                   {item.kind !== 'upload'
                     ? `${item.repository} · ${item.target_commit ? item.target_commit.slice(0, 7) : item.branch}`
-                    : '上传工作区'}
+                    : t('上传工作区')}
                   <br />
-                  {item.file_count ?? 0} 文件 · {item.post_count ?? 0} 已发布
+                  {number(item.file_count ?? 0)} {t(' 文件 ·')}
+                  {number(item.post_count ?? 0)} {t(' 已发布')}
                 </small>
               </span>
             </button>
           ))}
           <div className="sidebar-note">
-            <strong>两种格式，一个空间</strong>
-            <p>勾选 .typ 作为编译入口，或选中 Markdown 文章。其他文件作为依赖保留。</p>
+            <strong>{t('两种格式，一个空间')}</strong>
+            <p>{t('勾选 .typ 作为编译入口，或选中 Markdown 文章。其他文件作为依赖保留。')}</p>
           </div>
         </aside>
         <section className="workspace-main" aria-busy={Boolean(busy || fetching)}>
           {fetching ? (
             <div className="empty" role="status">
-              正在读取工作区…
+              {t('正在读取工作区…')}
             </div>
           ) : !source ? (
             <div className="empty workspace-placeholder">
               <span className="empty-symbol">▤</span>
-              <h2>为思考留一个空间</h2>
-              <p>从左侧选择来源，或新建工作区。</p>
+              <h2>{t('为思考留一个空间')}</h2>
+              <p>{t('从左侧选择来源，或新建工作区。')}</p>
               <button className="button secondary" onClick={() => setCreating(true)}>
-                添加内容来源
+                {t('添加内容来源')}
               </button>
             </div>
           ) : (
@@ -440,7 +460,7 @@ export function Dashboard() {
                         {source.commit_sha && <code>· {source.commit_sha.slice(0, 7)}</code>}
                       </>
                     ) : (
-                      '上传文字与依赖文件，保留你的目录结构。'
+                      t('上传文字与依赖文件，保留你的目录结构。')
                     )}
                   </p>
                 </div>
@@ -465,11 +485,11 @@ export function Dashboard() {
                           await loadWorkspace(source.id);
                           await loadSources();
                         },
-                        '已同步仓库。重新发布后线上文章才会更新。',
+                        t('已同步仓库。重新发布后线上文章才会更新。'),
                       )
                     }
                   >
-                    ↻ 同步仓库
+                    {t('↻ 同步仓库')}
                   </button>
                 )}
               </div>
@@ -477,10 +497,10 @@ export function Dashboard() {
                 <div className="repository-token">
                   <div className="repository-fields">
                     <label>
-                      Commit SHA（可选）
+                      {t('Commit SHA（可选）')}
                       <input
-                        aria-label="同步 Commit SHA"
-                        placeholder="留空跟随分支，或填写完整 Commit SHA"
+                        aria-label={t('同步 Commit SHA')}
+                        placeholder={t('留空跟随分支，或填写完整 Commit SHA')}
                         value={repoCommit}
                         maxLength={64}
                         disabled={Boolean(busy)}
@@ -488,10 +508,10 @@ export function Dashboard() {
                       />
                     </label>
                     <label>
-                      仓库用户名（可选）
+                      {t('仓库用户名（可选）')}
                       <input
-                        aria-label="仓库用户名"
-                        placeholder="按 Git 服务要求填写"
+                        aria-label={t('仓库用户名')}
+                        placeholder={t('按 Git 服务要求填写')}
                         value={repoUsername}
                         maxLength={200}
                         autoComplete="off"
@@ -500,15 +520,15 @@ export function Dashboard() {
                       />
                     </label>
                     <label>
-                      私有仓库访问 token
+                      {t('私有仓库访问 token')}
                       <input
                         type="password"
                         autoComplete="off"
-                        aria-label="私有仓库访问 token"
+                        aria-label={t('私有仓库访问 token')}
                         placeholder={
                           source.has_credentials
-                            ? '留空使用已保存凭据'
-                            : 'Token 或 HTTPS 密码（公开仓库可留空）'
+                            ? t('留空使用已保存凭据')
+                            : t('Token 或 HTTPS 密码（公开仓库可留空）')
                         }
                         value={repoToken}
                         disabled={Boolean(busy)}
@@ -519,7 +539,7 @@ export function Dashboard() {
                   <div className="repository-settings">
                     <div className="credential-status">
                       <span>
-                        {source.has_credentials ? '服务器已保存加密凭据' : '未保存仓库凭据'}
+                        {source.has_credentials ? t('服务器已保存加密凭据') : t('未保存仓库凭据')}
                       </span>
                       <div className="tool-actions">
                         <button
@@ -539,11 +559,11 @@ export function Dashboard() {
                                 setWorkspace(await api<Workspace>(`/api/sources/${source.id}`));
                                 await loadSources();
                               },
-                              '凭据已加密保存，后续同步无需重复输入。',
+                              t('凭据已加密保存，后续同步无需重复输入。'),
                             )
                           }
                         >
-                          {source.has_credentials ? '替换已保存凭据' : '保存凭据'}
+                          {source.has_credentials ? t('替换已保存凭据') : t('保存凭据')}
                         </button>
                         {source.has_credentials && (
                           <button
@@ -561,11 +581,11 @@ export function Dashboard() {
                                   setWorkspace(await api<Workspace>(`/api/sources/${source.id}`));
                                   await loadSources();
                                 },
-                                '已删除保存的凭据，并关闭自动同步。',
+                                t('已删除保存的凭据，并关闭自动同步。'),
                               )
                             }
                           >
-                            删除保存的凭据
+                            {t('删除保存的凭据')}
                           </button>
                         )}
                       </div>
@@ -600,35 +620,41 @@ export function Dashboard() {
                               setWorkspace(await api<Workspace>(`/api/sources/${source.id}`));
                               await loadSources();
                             },
-                            enabled ? '已开启：下次打开此工作台时自动同步。' : '已关闭自动同步。',
+                            enabled
+                              ? t('已开启：下次打开此工作台时自动同步。')
+                              : t('已关闭自动同步。'),
                           );
                         }}
                       />
-                      打开此工作台时自动同步
+                      {t('打开此工作台时自动同步')}
                     </label>
                     {source.synced_at && (
-                      <small>上次同步：{new Date(source.synced_at).toLocaleString('zh-CN')}</small>
+                      <small>
+                        {t('上次同步：')}
+                        {new Date(source.synced_at).toLocaleString(language())}
+                      </small>
                     )}
                   </div>
                   <p>
-                    Commit 留空则同步分支最新版本。token 留空时复用已保存凭据，填写新 token
-                    只用于本次同步；点击「保存凭据」才会持久保存。自动同步仅更新草稿，勾选发布的内容将公开。
+                    {t(
+                      'Commit 留空则同步分支最新版本。token 留空时复用已保存凭据，填写新 token 只用于本次同步；点击「保存凭据」才会持久保存。自动同步仅更新草稿，勾选发布的内容将公开。',
+                    )}
                   </p>
                   {!workspace.credentialStorageAvailable && (
-                    <p>管理员尚未配置凭据存储；仍可输入 token 进行单次同步。</p>
+                    <p>{t('管理员尚未配置凭据存储；仍可输入 token 进行单次同步。')}</p>
                   )}
                 </div>
               )}
               {source.kind === 'upload' && (
                 <div className="upload-panel">
                   <div>
-                    <strong>把文件带到这里</strong>
-                    <p>Typst、Markdown，以及文章需要的图片、模板和数据。</p>
+                    <strong>{t('把文件带到这里')}</strong>
+                    <p>{t('Typst、Markdown，以及文章需要的图片、模板和数据。')}</p>
                   </div>
                   <div className="upload-actions">
                     <input
-                      aria-label="上传目标目录"
-                      placeholder="目标目录（可选）"
+                      aria-label={t('上传目标目录')}
+                      placeholder={t('目标目录（可选）')}
                       value={prefix}
                       onChange={(event) => setPrefix(event.target.value)}
                       disabled={Boolean(busy)}
@@ -638,14 +664,14 @@ export function Dashboard() {
                       disabled={Boolean(busy)}
                       onClick={() => fileInput.current?.click()}
                     >
-                      上传文件
+                      {t('上传文件')}
                     </button>
                     <button
                       className="button secondary small"
                       disabled={Boolean(busy)}
                       onClick={() => folderInput.current?.click()}
                     >
-                      上传文件夹
+                      {t('上传文件夹')}
                     </button>
                     <input
                       type="file"
@@ -672,11 +698,12 @@ export function Dashboard() {
                       disabled={Boolean(busy)}
                       onChange={(event) => setIgnoreHidden(event.target.checked)}
                     />
-                    忽略隐藏文件和文件夹
+                    {t('忽略隐藏文件和文件夹')}
                   </label>
                   <small>
-                    工作区 1 GiB / 1024 文件 · 单文件无独立大小限制 · 隐藏项指任意层级以 .
-                    开头的名称
+                    {t(
+                      '工作区 1 GiB / 1024 文件 · 单文件无独立大小限制 · 隐藏项指任意层级以 . 开头的名称',
+                    )}
                   </small>
                 </div>
               )}
@@ -684,8 +711,8 @@ export function Dashboard() {
                 <label className="search-input">
                   <span aria-hidden="true">⌕</span>
                   <input
-                    aria-label="筛选文件"
-                    placeholder="查找文件路径…"
+                    aria-label={t('筛选文件')}
+                    placeholder={t('查找文件路径…')}
                     value={filter}
                     onChange={(event) => setFilter(event.target.value)}
                   />
@@ -696,29 +723,29 @@ export function Dashboard() {
                       disabled={Boolean(busy)}
                       onClick={() => setEditor({ path: '', content: '' })}
                     >
-                      ＋ 新建文本
+                      {t('＋ 新建文本')}
                     </button>
                     <button disabled={Boolean(busy)} onClick={() => setFolder('')}>
-                      ＋ 新建文件夹
+                      {t('＋ 新建文件夹')}
                     </button>
                     <button disabled={Boolean(busy)} onClick={() => setMove({ from: '', to: '' })}>
-                      移动文件 / 目录
+                      {t('移动文件 / 目录')}
                     </button>
                   </div>
                 )}
               </div>
               <div className="file-list">
                 <div className="file-list-header">
-                  <span>选择入口 / 文件路径</span>
-                  <span>大小</span>
-                  <span>操作</span>
+                  <span>{t('选择入口 / 文件路径')}</span>
+                  <span>{t('大小')}</span>
+                  <span>{t('操作')}</span>
                 </div>
                 {!workspace.files.length && !workspace.directories.length ? (
                   <div className="empty">
                     <p>
                       {source.kind !== 'upload'
-                        ? '点击「同步仓库」获取仓库文件。'
-                        : '还没有文件，上传或新建一篇文章吧。'}
+                        ? t('点击「同步仓库」获取仓库文件。')
+                        : t('还没有文件，上传或新建一篇文章吧。')}
                     </p>
                   </div>
                 ) : (
@@ -733,42 +760,42 @@ export function Dashboard() {
                             <>
                               <button
                                 disabled={Boolean(busy)}
-                                aria-label={`在 ${path} 新建文件`}
+                                aria-label={t('在 {0} 新建文件', [path])}
                                 onClick={() => setEditor({ path: `${path}/`, content: '' })}
                               >
-                                新建文件
+                                {t('新建文件')}
                               </button>
                               <button
                                 disabled={Boolean(busy)}
-                                aria-label={`在 ${path} 新建文件夹`}
+                                aria-label={t('在 {0} 新建文件夹', [path])}
                                 onClick={() => setFolder(`${path}/`)}
                               >
-                                新建文件夹
+                                {t('新建文件夹')}
                               </button>
                               <button
                                 disabled={Boolean(busy)}
-                                aria-label={`上传到 ${path}`}
+                                aria-label={t('上传到 {0}', [path])}
                                 onClick={() => {
                                   setPrefix(path);
                                   fileInput.current?.click();
                                 }}
                               >
-                                上传文件
+                                {t('上传文件')}
                               </button>
                               <button
                                 disabled={Boolean(busy)}
-                                aria-label={`重命名文件夹 ${path}`}
+                                aria-label={t('重命名文件夹 {0}', [path])}
                                 onClick={() => setMove({ from: path, to: path })}
                               >
-                                重命名 / 移动
+                                {t('重命名 / 移动')}
                               </button>
                               <button
                                 disabled={Boolean(busy)}
                                 className="danger-text"
-                                aria-label={`删除文件夹 ${path}`}
+                                aria-label={t('删除文件夹 {0}', [path])}
                                 onClick={() => deletePath(path, true)}
                               >
-                                删除
+                                {t('删除')}
                               </button>
                             </>
                           )
@@ -784,7 +811,7 @@ export function Dashboard() {
                           {isEntry(file.path) ? (
                             <input
                               type="checkbox"
-                              aria-label={`发布 ${file.path}`}
+                              aria-label={t('发布 {0}', [file.path])}
                               checked={file.path in selected}
                               disabled={Boolean(busy)}
                               onChange={(event) =>
@@ -797,7 +824,7 @@ export function Dashboard() {
                               }
                             />
                           ) : (
-                            <span className="dependency-dot" aria-label="依赖文件">
+                            <span className="dependency-dot" aria-label={t('依赖文件')}>
                               ·
                             </span>
                           )}
@@ -807,14 +834,16 @@ export function Dashboard() {
                             </span>
                             {file.post_id && (
                               <span className="file-state">
-                                {file.source_revision === source.revision ? '已发布' : '草稿有更新'}
+                                {file.source_revision === source.revision
+                                  ? t('已发布')
+                                  : t('草稿有更新')}
                               </span>
                             )}
                             {file.path in selected && (
                               <input
                                 className="title-input"
-                                aria-label={`${file.path} 的文章标题`}
-                                placeholder="文章标题（留空自动提取）"
+                                aria-label={t('{0} 的文章标题', [file.path])}
+                                placeholder={t('文章标题（留空自动提取）')}
                                 value={selected[file.path]}
                                 disabled={Boolean(busy)}
                                 maxLength={200}
@@ -831,15 +860,15 @@ export function Dashboard() {
                         <span className="file-size">{size(file.size)}</span>
                         <div className="file-actions">
                           {file.post_id && (
-                            <Link title="阅读已发布版本" to={`/p/${file.post_id}`}>
-                              阅读
+                            <Link title={t('阅读已发布版本')} to={`/p/${file.post_id}`}>
+                              {t('阅读')}
                             </Link>
                           )}
                           <a
-                            title="下载草稿文件"
+                            title={t('下载草稿文件')}
                             href={`/api/sources/${source.id}/file?path=${encodeURIComponent(file.path)}`}
                           >
-                            下载
+                            {t('下载')}
                           </a>
                           {source.kind === 'upload' && (
                             <>
@@ -848,22 +877,22 @@ export function Dashboard() {
                                   disabled={Boolean(busy)}
                                   onClick={() => openEditor(file.path)}
                                 >
-                                  编辑
+                                  {t('编辑')}
                                 </button>
                               )}
                               <button
                                 disabled={Boolean(busy)}
-                                aria-label={`重命名文件 ${file.path}`}
+                                aria-label={t('重命名文件 {0}', [file.path])}
                                 onClick={() => setMove({ from: file.path, to: file.path })}
                               >
-                                重命名 / 移动
+                                {t('重命名 / 移动')}
                               </button>
                               <button
                                 className="danger-text"
                                 disabled={Boolean(busy)}
                                 onClick={() => deletePath(file.path)}
                               >
-                                删除
+                                {t('删除')}
                               </button>
                             </>
                           )}
@@ -875,34 +904,39 @@ export function Dashboard() {
               </div>
               {missing.length > 0 && (
                 <div className="notice">
-                  {missing.length} 篇已发布文章的入口已从草稿删除，下次发布会将其下架。
+                  {number(missing.length)}{' '}
+                  {t(' 篇已发布文章的入口已从草稿删除，下次发布会将其下架。')}
                 </div>
               )}
               <div className="publish-panel">
                 <div>
                   <strong>
-                    已选择 {Object.keys(selected).length} 个入口{' '}
-                    <span className="muted">/ 最多 30 个</span>
+                    {t('已选择 ')}
+                    {number(Object.keys(selected).length)} {t(' 个入口')}{' '}
+                    <span className="muted">{t('/ 最多 30 个')}</span>
                   </strong>
-                  <p>发布会更新勾选的文章，并下架未勾选的文章。失败保留旧版本。</p>
+                  <p>{t('发布会更新勾选的文章，并下架未勾选的文章。失败保留旧版本。')}</p>
                 </div>
                 <button
                   className="button"
                   disabled={Boolean(busy) || Object.keys(selected).length > 30}
                   onClick={publish}
                 >
-                  发布所选文章 <span aria-hidden="true">↗</span>
+                  {t('发布所选文章 ')}
+                  <span aria-hidden="true">↗</span>
                 </button>
               </div>
               <div className="workspace-bottom">
-                <span>修改草稿后，需再次发布。</span>
+                <span>{t('修改草稿后，需再次发布。')}</span>
                 <button
                   className="text-button danger-text"
                   disabled={Boolean(busy)}
                   onClick={() => {
                     if (
                       window.confirm(
-                        `删除整个来源「${source.name}」及全部文件、已发布文章？此操作不可恢复。`,
+                        t('删除整个来源「{0}」及全部文件、已发布文章？此操作不可恢复。', [
+                          source.name,
+                        ]),
                       )
                     )
                       void run(
@@ -912,11 +946,11 @@ export function Dashboard() {
                           setParams({});
                           await loadSources();
                         },
-                        '来源已删除。',
+                        t('来源已删除。'),
                       );
                   }}
                 >
-                  删除来源
+                  {t('删除来源')}
                 </button>
               </div>
             </>
@@ -928,34 +962,34 @@ export function Dashboard() {
           <section className="modal" role="dialog" aria-modal="true" aria-labelledby="create-title">
             <button
               className="modal-close"
-              aria-label="关闭"
+              aria-label={t('关闭')}
               disabled={Boolean(busy)}
               onClick={() => setCreating(false)}
             >
               ×
             </button>
             <p className="eyebrow">A NEW BEGINNING</p>
-            <h2 id="create-title">添加内容来源</h2>
+            <h2 id="create-title">{t('添加内容来源')}</h2>
             <div className="segmented">
               <button
                 className={kind === 'upload' ? 'active' : ''}
                 onClick={() => setKind('upload')}
               >
-                上传工作区
+                {t('上传工作区')}
               </button>
               <button className={kind === 'git' ? 'active' : ''} onClick={() => setKind('git')}>
-                Git 仓库
+                {t('Git 仓库')}
               </button>
             </div>
             <form onSubmit={createSource}>
               <label>
-                来源名称
-                <input required name="name" maxLength={120} placeholder="例如：我的数学笔记" />
+                {t('来源名称')}
+                <input required name="name" maxLength={120} placeholder={t('例如：我的数学笔记')} />
               </label>
               {kind === 'git' && (
                 <>
                   <label>
-                    仓库地址
+                    {t('仓库地址')}
                     <input
                       required
                       name="repository"
@@ -964,26 +998,27 @@ export function Dashboard() {
                     />
                   </label>
                   <label>
-                    分支名
+                    {t('分支名')}
                     <input required name="branch" defaultValue="main" maxLength={200} />
                   </label>
                   <label>
-                    Commit SHA（可选）
+                    {t('Commit SHA（可选）')}
                     <input
                       name="commit"
                       maxLength={64}
                       pattern="[a-fA-F0-9]{40}|[a-fA-F0-9]{64}"
-                      placeholder="完整 SHA；留空使用分支最新提交"
+                      placeholder={t('完整 SHA；留空使用分支最新提交')}
                     />
                   </label>
                   <p className="muted">
-                    支持任意公网 HTTPS Git 仓库，也可填写 GitHub 的 owner/repository
-                    简写。创建后手动同步，私有仓库可输入用户名与 token。文章发布后公开。
+                    {t(
+                      '支持任意公网 HTTPS Git 仓库，也可填写 GitHub 的 owner/repository 简写。创建后手动同步，私有仓库可输入用户名与 token。文章发布后公开。',
+                    )}
                   </p>
                 </>
               )}
               <button className="button" disabled={Boolean(busy)} type="submit">
-                创建来源 →
+                {t('创建来源 →')}
               </button>
             </form>
             {error && (
@@ -1004,13 +1039,13 @@ export function Dashboard() {
           >
             <button
               className="modal-close"
-              aria-label="关闭"
+              aria-label={t('关闭')}
               disabled={Boolean(busy)}
               onClick={() => setEditor(null)}
             >
               ×
             </button>
-            <h2 id="edit-title">{editor.original ? '编辑草稿' : '新建文本文件'}</h2>
+            <h2 id="edit-title">{editor.original ? t('编辑草稿') : t('新建文本文件')}</h2>
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -1025,12 +1060,12 @@ export function Dashboard() {
                     await loadWorkspace(sourceId);
                     await loadSources();
                   },
-                  '草稿已保存，发布后线上版本才会更新。',
+                  t('草稿已保存，发布后线上版本才会更新。'),
                 );
               }}
             >
               <label>
-                相对文件路径
+                {t('相对文件路径')}
                 <input
                   required
                   placeholder="notes/hello.typ"
@@ -1040,7 +1075,7 @@ export function Dashboard() {
                 />
               </label>
               <label>
-                文件内容
+                {t('文件内容')}
                 <textarea
                   required={false}
                   value={editor.content}
@@ -1050,7 +1085,7 @@ export function Dashboard() {
                 />
               </label>
               <button className="button" disabled={Boolean(busy)}>
-                保存草稿
+                {t('保存草稿')}
               </button>
             </form>
             {error && (
@@ -1066,13 +1101,13 @@ export function Dashboard() {
           <section className="modal" role="dialog" aria-modal="true" aria-labelledby="folder-title">
             <button
               className="modal-close"
-              aria-label="关闭"
+              aria-label={t('关闭')}
               disabled={Boolean(busy)}
               onClick={() => setFolder(null)}
             >
               ×
             </button>
-            <h2 id="folder-title">新建文件夹</h2>
+            <h2 id="folder-title">{t('新建文件夹')}</h2>
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -1086,12 +1121,12 @@ export function Dashboard() {
                     setFolder(null);
                     await loadWorkspace(sourceId);
                   },
-                  '文件夹已创建，可以在其中新建或上传文件。',
+                  t('文件夹已创建，可以在其中新建或上传文件。'),
                 );
               }}
             >
               <label>
-                文件夹路径
+                {t('文件夹路径')}
                 <input
                   required
                   autoFocus
@@ -1101,9 +1136,9 @@ export function Dashboard() {
                   onChange={(event) => setFolder(event.target.value)}
                 />
               </label>
-              <p>支持多级路径，空文件夹也会保存。</p>
+              <p>{t('支持多级路径，空文件夹也会保存。')}</p>
               <button className="button" disabled={Boolean(busy)}>
-                创建文件夹
+                {t('创建文件夹')}
               </button>
             </form>
             {error && (
@@ -1119,13 +1154,13 @@ export function Dashboard() {
           <section className="modal" role="dialog" aria-modal="true" aria-labelledby="move-title">
             <button
               className="modal-close"
-              aria-label="关闭"
+              aria-label={t('关闭')}
               disabled={Boolean(busy)}
               onClick={() => setMove(null)}
             >
               ×
             </button>
-            <h2 id="move-title">重命名或移动文件与文件夹</h2>
+            <h2 id="move-title">{t('重命名或移动文件与文件夹')}</h2>
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -1137,12 +1172,12 @@ export function Dashboard() {
                     await loadWorkspace(sourceId);
                     await loadSources();
                   },
-                  '路径已更新。请检查入口中的相对引用并重新发布。',
+                  t('路径已更新。请检查入口中的相对引用并重新发布。'),
                 );
               }}
             >
               <label>
-                原路径
+                {t('原路径')}
                 <input
                   required
                   disabled={Boolean(busy)}
@@ -1152,7 +1187,7 @@ export function Dashboard() {
                 />
               </label>
               <label>
-                新路径
+                {t('新路径')}
                 <input
                   required
                   disabled={Boolean(busy)}
@@ -1163,7 +1198,7 @@ export function Dashboard() {
                 />
               </label>
               <button className="button" disabled={Boolean(busy)}>
-                保存路径
+                {t('保存路径')}
               </button>
             </form>
             {error && (

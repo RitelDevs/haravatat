@@ -1,3 +1,4 @@
+import { t, number } from './i18n';
 import type { Heading, Nodes, Paragraph, Root } from 'mdast';
 import type { Element } from 'hast';
 import type { Plugin } from 'unified';
@@ -49,9 +50,10 @@ export const remarkToc: Plugin<[], Root> = () => (tree) => {
     stack: Entry[] = [];
   const used = new Set<string>();
   const add = (heading: Heading) => {
-    const title = headingText(heading).trim() || '无标题';
+    const sourceTitle = headingText(heading).trim() || '无标题';
+    const title = headingText(heading).trim() || t('无标题');
     const slug =
-      title
+      sourceTitle
         .normalize('NFKC')
         .toLowerCase()
         .replace(/[^\p{L}\p{N}\p{M}_\s-]/gu, '')
@@ -83,13 +85,13 @@ export const remarkToc: Plugin<[], Root> = () => (tree) => {
         children: [],
         data: {
           hName: 'nav',
-          hProperties: { className: ['markdown-toc'], ariaLabel: '文章目录' },
+          hProperties: { className: ['markdown-toc'], ariaLabel: t('文章目录') },
           hChildren: [
             {
               type: 'element',
               tagName: 'p',
               properties: { className: ['markdown-toc-title'] },
-              children: [{ type: 'text', value: '目录' }],
+              children: [{ type: 'text', value: t('目录') }],
             },
             tocList(outline),
           ],

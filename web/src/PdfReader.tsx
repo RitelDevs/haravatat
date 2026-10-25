@@ -1,3 +1,4 @@
+import { t, useLanguage, number, message } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import {
   getDocument,
@@ -16,6 +17,7 @@ interface PageView {
   height: number;
 }
 export function PdfReader({ url }: { url: string }) {
+  useLanguage();
   const container = useRef<HTMLDivElement>(null),
     [pages, setPages] = useState<PageView[]>([]),
     [pdf, setPdf] = useState<PDFDocumentProxy | null>(null),
@@ -85,15 +87,16 @@ export function PdfReader({ url }: { url: string }) {
     }
   };
   return (
-    <div className="pdf-reader" ref={container} aria-label="PDF 连续阅读">
+    <div className="pdf-reader" ref={container} aria-label={t('PDF 连续阅读')}>
       {loading && (
         <p className="empty" role="status">
-          正在加载排版文章…
+          {t('正在加载排版文章…')}
         </p>
       )}
       {error && (
         <div className="notice error" role="alert">
-          PDF 显示失败：{error} <a href={url}>下载 PDF</a>
+          {t('PDF 显示失败：')}
+          {message(error)} <a href={url}>{t('下载 PDF')}</a>
         </div>
       )}
       {pages.map((view) => (
@@ -111,6 +114,7 @@ function PdfPage({
   width: number;
   goTo: (dest: unknown) => Promise<void>;
 }) {
+  useLanguage();
   const root = useRef<HTMLDivElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     text = useRef<HTMLDivElement>(null);
@@ -201,13 +205,14 @@ function PdfPage({
           '--scale-round-y': '1px',
         } as React.CSSProperties
       }
-      aria-label={`第 ${view.page.pageNumber} 页`}
+      aria-label={t('第 {0} 页', [view.page.pageNumber])}
     >
       <canvas ref={canvas} aria-hidden="true" />
       <div className="textLayer" ref={text} />
       {error && (
         <p className="pdf-page-error" role="alert">
-          此页显示失败：{error}
+          {t('此页显示失败：')}
+          {message(error)}
         </p>
       )}
       {links.map((link, i) => (
@@ -215,7 +220,7 @@ function PdfPage({
           key={i}
           className="pdf-link"
           href={link.url || '#'}
-          aria-label={link.url || '跳转到文内链接'}
+          aria-label={link.url || t('跳转到文内链接')}
           rel="noopener noreferrer"
           onClick={(event) => {
             if (!link.url) {

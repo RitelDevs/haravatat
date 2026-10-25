@@ -1,3 +1,4 @@
+import { t, useLanguage, language, number, message } from './i18n';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Markdown, { defaultUrlTransform } from 'react-markdown';
@@ -9,6 +10,7 @@ const PdfReader = lazy(() =>
   import('./PdfReader').then((module) => ({ default: module.PdfReader })),
 );
 export function Home() {
+  useLanguage();
   const [params, setParams] = useSearchParams();
   const page = Math.max(1, Number(params.get('page')) || 1),
     author = params.get('author') || '';
@@ -42,16 +44,18 @@ export function Home() {
         <div>
           <p className="eyebrow">A PLACE FOR THOUGHTFUL WORDS</p>
           <h1>
-            思考，值得
+            {t('思考，值得')}
             <br />
-            <em>被好好呈现。</em>
+            <em>{t('被好好呈现。')}</em>
           </h1>
           <p className="hero-description">
-            从一行文字到一页公式。用 Markdown 记录，
-            <br className="desktop-break" />用 Typst 表达，在这里分享你的知识。
+            {t('从一行文字到一页公式。用 Markdown 记录，')}
+            <br className="desktop-break" />
+            {t('用 Typst 表达，在这里分享你的知识。')}
           </p>
           <Link className="button" to="/dashboard">
-            开始写作 <span aria-hidden="true">↗</span>
+            {t('开始写作 ')}
+            <span aria-hidden="true">↗</span>
           </Link>
         </div>
         <div className="hero-paper" aria-hidden="true">
@@ -59,9 +63,9 @@ export function Home() {
             NOTES ON KNOWLEDGE <span>01</span>
           </div>
           <h2>
-            文字的秩序
+            {t('文字的秩序')}
             <br />
-            思考的自由
+            {t('思考的自由')}
           </h2>
           <p>Every idea deserves a place.</p>
           <div className="paper-equation">
@@ -84,32 +88,32 @@ export function Home() {
         <div className="section-heading">
           <div>
             <p className="eyebrow">THE JOURNAL</p>
-            <h2>{author ? `${author} 的文章` : '最新文章'}</h2>
+            <h2>{author ? t('{0} 的文章', [author]) : t('最新文章')}</h2>
           </div>
           <span className="muted">
-            公开的文字，共享的灵感
+            {t('公开的文字，共享的灵感')}
             {author && (
               <>
                 {' '}
-                · <Link to="/">查看全部</Link>
+                · <Link to="/">{t('查看全部')}</Link>
               </>
             )}
           </span>
         </div>
         {loading ? (
           <div className="empty" role="status">
-            正在读取文章…
+            {t('正在读取文章…')}
           </div>
         ) : error ? (
           <div className="notice error" role="alert">
-            {error}
+            {message(error)}
           </div>
         ) : !posts.length ? (
           <div className="empty empty-journal">
             <span className="empty-symbol">✳</span>
-            <h3>故事从第一篇开始</h3>
-            <p>连接你的仓库，或上传文件，把思考分享给世界。</p>
-            <Link to="/dashboard">前往工作台 →</Link>
+            <h3>{t('故事从第一篇开始')}</h3>
+            <p>{t('连接你的仓库，或上传文件，把思考分享给世界。')}</p>
+            <Link to="/dashboard">{t('前往工作台 →')}</Link>
           </div>
         ) : (
           <div className="post-grid">
@@ -145,14 +149,17 @@ export function Home() {
               disabled={page <= 1}
               onClick={() => setParams({ ...(author ? { author } : {}), page: String(page - 1) })}
             >
-              ← 上一页
+              {t('← 上一页')}
             </button>
-            <span>第 {page} 页</span>
+            <span>
+              {t('第')}
+              {number(page)} {t(' 页')}
+            </span>
             <button
               disabled={!more}
               onClick={() => setParams({ ...(author ? { author } : {}), page: String(page + 1) })}
             >
-              下一页 →
+              {t('下一页 →')}
             </button>
           </div>
         )}
@@ -161,6 +168,7 @@ export function Home() {
   );
 }
 export function Article() {
+  useLanguage();
   const article = useRef<HTMLElement>(null);
   const { id } = useParams(),
     [post, setPost] = useState<Post | null>(null),
@@ -180,7 +188,7 @@ export function Article() {
       });
     return () => {
       controller.abort();
-      document.title = 'Haravatat · 知识与文字';
+      document.title = t('Haravatat · 知识与文字');
     };
   }, [id]);
   useEffect(() => {
@@ -198,25 +206,45 @@ export function Article() {
       }
     };
     // Article content arrives after the browser's initial fragment lookup.
-    const frame = requestAnimationFrame(scrollToFragment);
+    let frame = 0;
+    let initial = true;
+    const settleFragment = () => {
+      if (!initial) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(scrollToFragment);
+    };
+    const stopFollowing = () => {
+      initial = false;
+      cancelAnimationFrame(frame);
+    };
+    const observer = new ResizeObserver(settleFragment);
+    if (article.current) observer.observe(article.current);
+    const page = article.current?.closest('main');
+    if (page) observer.observe(page);
+    settleFragment();
     window.addEventListener('hashchange', scrollToFragment);
+    for (const event of ['pointerdown', 'wheel', 'touchstart', 'keydown'])
+      window.addEventListener(event, stopFollowing, { passive: true });
     return () => {
       cancelAnimationFrame(frame);
+      observer.disconnect();
       window.removeEventListener('hashchange', scrollToFragment);
+      for (const event of ['pointerdown', 'wheel', 'touchstart', 'keydown'])
+        window.removeEventListener(event, stopFollowing);
     };
   }, [post, id]);
   return (
     <main className="article-page">
       <Link className="back-link" to="/">
-        ← 返回文章
+        {t('← 返回文章')}
       </Link>
       {error ? (
         <div className="notice error" role="alert">
-          {error}
+          {message(error)}
         </div>
       ) : !post ? (
         <div className="empty" role="status">
-          正在打开文章…
+          {t('正在打开文章…')}
         </div>
       ) : (
         <>
@@ -238,7 +266,7 @@ export function Article() {
             <Suspense
               fallback={
                 <div className="empty" role="status">
-                  正在加载阅读器…
+                  {t('正在加载阅读器…')}
                 </div>
               }
             >
@@ -246,9 +274,10 @@ export function Article() {
             </Suspense>
           ) : (
             <div className="article-layout">
-              <ArticleOutline article={article} contentKey={post.id} />
+              <ArticleOutline article={article} contentKey={`${post.id}:${language()}`} />
               <article className="markdown-body" ref={article}>
                 <Markdown
+                  key={language()}
                   remarkPlugins={markdownPlugins}
                   rehypePlugins={htmlPlugins}
                   skipHtml

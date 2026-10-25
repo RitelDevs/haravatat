@@ -1,3 +1,4 @@
+import { t, useLanguage, language, number } from './i18n';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { Workspace } from './api';
 
@@ -22,6 +23,7 @@ export function FileTree({
   renderDirectoryActions?: (path: string) => ReactNode;
   renderFile: (file: File, depth: number) => ReactNode;
 }) {
+  useLanguage();
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const { root, directories } = useMemo(() => {
     const root: Directory = { path: '', name: '', directories: new Map(), files: [] };
@@ -48,9 +50,9 @@ export function FileTree({
     return { root, directories };
   }, [files, filter, storedDirectories]);
   const children = (parent: Directory, depth: number): ReactNode => (
-    <ul className="file-tree" aria-label={parent.path ? `目录 ${parent.path}` : '文件树'}>
+    <ul className="file-tree" aria-label={parent.path ? t('目录 {0}', [parent.path]) : t('文件树')}>
       {[...parent.directories.values()]
-        .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+        .sort((a, b) => a.name.localeCompare(b.name, language()))
         .map((directory) => {
           const open = Boolean(filter) || !collapsed.has(directory.path);
           return (
@@ -62,7 +64,7 @@ export function FileTree({
               >
                 <button
                   className="directory-toggle"
-                  aria-label={`目录 ${directory.path}`}
+                  aria-label={t('目录 {0}', [directory.path])}
                   aria-expanded={open}
                   onClick={() =>
                     setCollapsed((old) => {
@@ -86,7 +88,7 @@ export function FileTree({
           );
         })}
       {[...parent.files]
-        .sort((a, b) => a.path.localeCompare(b.path, 'zh-CN'))
+        .sort((a, b) => a.path.localeCompare(b.path, language()))
         .map((file) => (
           <li key={file.path}>{renderFile(file, depth)}</li>
         ))}
@@ -95,18 +97,21 @@ export function FileTree({
   return (
     <>
       <div className="tree-tools">
-        <span>文件树 · {files.length} 个文件</span>
+        <span>
+          {t('文件树 ·')}
+          {number(files.length)} {t(' 个文件')}
+        </span>
         <div className="tool-actions">
           <button disabled={Boolean(filter)} onClick={() => setCollapsed(new Set())}>
-            展开全部
+            {t('展开全部')}
           </button>
           <button disabled={Boolean(filter)} onClick={() => setCollapsed(new Set(directories))}>
-            收起全部
+            {t('收起全部')}
           </button>
         </div>
       </div>
       {!root.files.length && !root.directories.size ? (
-        <p className="empty">没有匹配的文件或文件夹。</p>
+        <p className="empty">{t('没有匹配的文件或文件夹。')}</p>
       ) : (
         children(root, 0)
       )}

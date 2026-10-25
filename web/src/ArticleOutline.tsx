@@ -1,3 +1,4 @@
+import { t, useLanguage, number } from './i18n';
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 
 interface Entry {
@@ -13,6 +14,7 @@ export function ArticleOutline({
   article: RefObject<HTMLElement | null>;
   contentKey: string;
 }) {
+  useLanguage();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [active, setActive] = useState('');
   const panel = useRef<HTMLDetailsElement>(null);
@@ -105,8 +107,8 @@ export function ArticleOutline({
   );
   return (
     <details className="article-outline" ref={mountPanel}>
-      <summary>章节导航</summary>
-      <nav aria-label="侧栏目录">{list(entries)}</nav>
+      <summary>{t('章节导航')}</summary>
+      <nav aria-label={t('侧栏目录')}>{list(entries)}</nav>
     </details>
   );
 }

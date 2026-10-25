@@ -1,7 +1,9 @@
+import { t, useLanguage } from './i18n';
 import { useEffect, useState } from 'react';
 
 type ColorMode = 'light' | 'dark' | 'system';
 export function Appearance() {
+  useLanguage();
   const [mode, setMode] = useState<ColorMode>(() => {
     const saved = document.documentElement.dataset.colorMode;
     return saved === 'light' || saved === 'dark' ? saved : 'system';
@@ -22,9 +24,9 @@ export function Appearance() {
   }, [mode]);
   return (
     <label className="appearance">
-      <span>显示模式</span>
+      <span>{t('显示模式')}</span>
       <select
-        aria-label="显示模式"
+        aria-label={t('显示模式')}
         value={mode}
         onChange={(event) => {
           const next = event.target.value as ColorMode;
@@ -36,9 +38,9 @@ export function Appearance() {
           }
         }}
       >
-        <option value="system">跟随系统</option>
-        <option value="light">亮色</option>
-        <option value="dark">暗色</option>
+        <option value="system">{t('跟随系统')}</option>
+        <option value="light">{t('亮色')}</option>
+        <option value="dark">{t('暗色')}</option>
       </select>
     </label>
   );

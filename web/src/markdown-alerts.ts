@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { Root } from 'mdast';
 import type { Plugin } from 'unified';
 import { visit } from 'unist-util-visit';
@@ -28,7 +29,7 @@ export const remarkAlerts: Plugin<[], Root> = () => (tree) => {
     node.children.unshift({
       type: 'paragraph',
       data: { hProperties: { className: ['markdown-alert-title'] } },
-      children: [{ type: 'text', value: labels[kind] }],
+      children: [{ type: 'text', value: t(labels[kind]) }],
     });
   });
 };

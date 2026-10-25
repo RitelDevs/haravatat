@@ -1,3 +1,4 @@
+import { preferredLanguage, translateMessage } from '../shared/i18n.js';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
@@ -59,7 +60,10 @@ export async function createApp({ db, config, github, repositories, compiler }: 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError)
       return reply.status(400).send({
-        error: '输入格式无效',
+        error: translateMessage(
+          '输入格式无效',
+          preferredLanguage(request.headers['accept-language']),
+        ),
         details: error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
       });
     const status =
@@ -73,12 +77,14 @@ export async function createApp({ db, config, github, repositories, compiler }: 
           : 500;
     if (status >= 500) request.log.error(error);
     return reply.status(status).send({
-      error:
+      error: translateMessage(
         error instanceof HttpError
           ? error.message
           : status < 500
             ? '请求无效或文件超过限制'
             : '服务器处理失败，请稍后重试',
+        preferredLanguage(request.headers['accept-language']),
+      ),
     });
   });
   app.get('/api/health', async () => {
