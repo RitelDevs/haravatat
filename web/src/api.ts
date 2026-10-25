@@ -1,3 +1,4 @@
+import type { BlogTheme } from '../../shared/blog-theme';
 import { t, language, number, message } from './i18n';
 export class ApiError extends Error {
   constructor(
@@ -64,7 +65,14 @@ export interface User {
   name: string;
   avatar_url: string;
 }
+export interface Blog {
+  login: string;
+  name: string;
+  avatar_url: string;
+  theme: BlogTheme;
+}
 export interface Post {
+  theme?: BlogTheme;
   id: string;
   title: string;
   format: 'typst' | 'markdown';

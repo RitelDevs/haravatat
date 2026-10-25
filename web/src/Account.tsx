@@ -43,6 +43,12 @@ export function Account() {
     <main className="page account-page">
       <Link to="/dashboard">{t('我的工作台')}</Link>
       <h1>{t('账号管理')}</h1>
+      <p>
+        <Link className="button" to="/account/theme">
+          {t('博客主题')}
+        </Link>{' '}
+        <Link to={`/?author=${encodeURIComponent(user.login)}`}>{t('查看我的博客')}</Link>
+      </p>
       <section className="account-panel" aria-label={t('GitHub 身份')}>
         <h2>{t('GitHub 身份')}</h2>
         <dl>

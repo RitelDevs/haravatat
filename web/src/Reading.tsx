@@ -2,10 +2,11 @@ import { t, useLanguage, language, number, message } from './i18n';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Markdown, { defaultUrlTransform } from 'react-markdown';
+import { themeAttributes } from './BlogTheme';
 import { ArticleOutline } from './ArticleOutline';
 import { markdownPlugins, htmlPlugins } from './markdown-config';
 import 'katex/dist/katex.min.css';
-import { api, type Post, date, errorMessage } from './api';
+import { api, type Post, type Blog, date, errorMessage } from './api';
 const PdfReader = lazy(() =>
   import('./PdfReader').then((module) => ({ default: module.PdfReader })),
 );
@@ -14,6 +15,7 @@ export function Home() {
   const [params, setParams] = useSearchParams();
   const page = Math.max(1, Number(params.get('page')) || 1),
     author = params.get('author') || '';
+  const [blog, setBlog] = useState<Blog | null>(null);
   const [posts, setPosts] = useState<Post[]>([]),
     [more, setMore] = useState(false),
     [loading, setLoading] = useState(true),
@@ -21,14 +23,24 @@ export function Home() {
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
+    setBlog(null);
     setError('');
-    api<{ posts: Post[]; hasMore: boolean }>(
-      `/api/posts?page=${page}${author ? `&author=${encodeURIComponent(author)}` : ''}`,
-      { signal: controller.signal },
-    )
-      .then((result) => {
+    Promise.all([
+      api<{ posts: Post[]; hasMore: boolean }>(
+        `/api/posts?page=${page}${author ? `&author=${encodeURIComponent(author)}` : ''}`,
+        { signal: controller.signal },
+      ),
+      author
+        ? api<{ blog: Blog }>(`/api/blogs/${encodeURIComponent(author)}`, {
+            signal: controller.signal,
+          })
+        : Promise.resolve(null),
+    ])
+      .then(([result, profile]) => {
+        if (controller.signal.aborted) return;
         setPosts(result.posts);
         setMore(result.hasMore);
+        setBlog(profile?.blog ?? null);
       })
       .catch((error) => {
         if (!controller.signal.aborted) setError(errorMessage(error));
@@ -39,51 +51,65 @@ export function Home() {
     return () => controller.abort();
   }, [page, author]);
   return (
-    <main className="page">
-      <section className="hero">
-        <div>
-          <p className="eyebrow">A PLACE FOR THOUGHTFUL WORDS</p>
-          <h1>
-            {t('思考，值得')}
-            <br />
-            <em>{t('被好好呈现。')}</em>
-          </h1>
-          <p className="hero-description">
-            {t('从一行文字到一页公式。用 Markdown 记录，')}
-            <br className="desktop-break" />
-            {t('用 Typst 表达，在这里分享你的知识。')}
-          </p>
-          <Link className="button" to="/dashboard">
-            {t('开始写作 ')}
-            <span aria-hidden="true">↗</span>
-          </Link>
-        </div>
-        <div className="hero-paper" aria-hidden="true">
-          <div className="paper-top">
-            NOTES ON KNOWLEDGE <span>01</span>
+    <main
+      className={`page${blog ? ' blog-theme' : ''}`}
+      {...(blog ? themeAttributes(blog.theme) : {})}
+    >
+      {author ? (
+        blog && (
+          <header className="blog-profile blog-cover">
+            <p className="eyebrow">{t('作者博客')}</p>
+            <h1>{blog.name}</h1>
+            <p>@{blog.login}</p>
+            <Link to="/">{t('查看全部')}</Link>
+          </header>
+        )
+      ) : (
+        <section className="hero">
+          <div>
+            <p className="eyebrow">A PLACE FOR THOUGHTFUL WORDS</p>
+            <h1>
+              {t('思考，值得')}
+              <br />
+              <em>{t('被好好呈现。')}</em>
+            </h1>
+            <p className="hero-description">
+              {t('从一行文字到一页公式。用 Markdown 记录，')}
+              <br className="desktop-break" />
+              {t('用 Typst 表达，在这里分享你的知识。')}
+            </p>
+            <Link className="button" to="/dashboard">
+              {t('开始写作 ')}
+              <span aria-hidden="true">↗</span>
+            </Link>
           </div>
-          <h2>
-            {t('文字的秩序')}
-            <br />
-            {t('思考的自由')}
-          </h2>
-          <p>Every idea deserves a place.</p>
-          <div className="paper-equation">
-            ∫<sub>0</sub>
-            <sup>∞</sup> e<sup>−x²</sup> dx = <span>√π / 2</span>
+          <div className="hero-paper" aria-hidden="true">
+            <div className="paper-top">
+              NOTES ON KNOWLEDGE <span>01</span>
+            </div>
+            <h2>
+              {t('文字的秩序')}
+              <br />
+              {t('思考的自由')}
+            </h2>
+            <p>Every idea deserves a place.</p>
+            <div className="paper-equation">
+              ∫<sub>0</sub>
+              <sup>∞</sup> e<sup>−x²</sup> dx = <span>√π / 2</span>
+            </div>
+            <div className="paper-rule" />
+            <div className="paper-lines">
+              <i />
+              <i />
+              <i />
+            </div>
+            <span className="paper-stamp">
+              TYPST
+              <br />& MD
+            </span>
           </div>
-          <div className="paper-rule" />
-          <div className="paper-lines">
-            <i />
-            <i />
-            <i />
-          </div>
-          <span className="paper-stamp">
-            TYPST
-            <br />& MD
-          </span>
-        </div>
-      </section>
+        </section>
+      )}
       <section className="journal">
         <div className="section-heading">
           <div>
@@ -234,8 +260,11 @@ export function Article() {
     };
   }, [post, id]);
   return (
-    <main className="article-page">
-      <Link className="back-link" to="/">
+    <main
+      className={`article-page${post ? ' blog-theme' : ''}`}
+      {...(post ? themeAttributes(post.theme) : {})}
+    >
+      <Link className="back-link" to={post ? `/?author=${encodeURIComponent(post.login)}` : '/'}>
         {t('← 返回文章')}
       </Link>
       {error ? (
@@ -248,7 +277,7 @@ export function Article() {
         </div>
       ) : (
         <>
-          <header className="article-heading">
+          <header className="article-heading blog-cover">
             <span className={`format-badge ${post.format}`}>
               {post.format === 'typst' ? 'TYPST' : 'MARKDOWN'}
             </span>

@@ -6,6 +6,7 @@ import rateLimit from '@fastify/rate-limit';
 import { ZodError } from 'zod';
 import type { Config } from './config.js';
 import type { Database } from './db.js';
+import { blogRoutes } from './blogs.js';
 import { authRoutes } from './auth.js';
 import { githubAuth, type GitHubAuth } from './github.js';
 import { HttpError } from './errors.js';
@@ -102,6 +103,7 @@ export async function createApp({ db, config, github, repositories, compiler }: 
     config,
     github ?? githubAuth(config.GITHUB_CLIENT_ID, config.GITHUB_CLIENT_SECRET, config.APP_ORIGIN),
   );
+  blogRoutes(app, db);
   await sourceRoutes(
     app,
     db,

@@ -39,6 +39,13 @@ const app = await createApp({
   }),
   github: {
     async exchange(code) {
+      if (code === 'theme-test')
+        return {
+          id: 303,
+          login: 'theme-writer',
+          name: 'Theme Writer',
+          avatar_url: 'https://avatars.githubusercontent.com/u/303',
+        };
       if (code === 'account-test')
         return {
           id: 202,

@@ -79,3 +79,9 @@ CREATE TABLE IF NOT EXISTS post_assets (
   media_type text NOT NULL,
   PRIMARY KEY (post_id, path)
 );
+
+-- Theme settings are independent of OAuth identity updates and disappear with the account.
+CREATE TABLE IF NOT EXISTS blog_themes (
+  user_id bigint PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  settings jsonb NOT NULL
+);

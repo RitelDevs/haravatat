@@ -55,6 +55,15 @@ test('account deletion verifies self, rolls back failures, cascades data, revoke
     post,
     Buffer.from('image'),
   ]);
+  await db.query('INSERT INTO blog_themes VALUES (1,$1::jsonb)', [
+    JSON.stringify({
+      version: 1,
+      palette: 'ocean',
+      font: 'sans',
+      layout: 'list',
+      cover: 'gradient',
+    }),
+  ]);
   const app = await createApp({
     db,
     config,
@@ -135,6 +144,7 @@ test('account deletion verifies self, rolls back failures, cascades data, revoke
       'posts',
       'post_assets',
       'repository_credentials',
+      'blog_themes',
     ])
       assert.equal((await db.query(`SELECT * FROM ${table}`)).rows.length, 0, table);
     assert.equal((await db.query('SELECT * FROM sources')).rows.length, 1);

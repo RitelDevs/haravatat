@@ -120,6 +120,7 @@ test('public Markdown and multi-page PDF reading work on desktop and mobile', as
 test('OAuth login, folder upload, editing, selection, publishing and HTTPS Git sync with pinned commits', async ({
   page,
 }) => {
+  test.setTimeout(60_000);
   await page.route(/\/auth\/github$/, async (route) => {
     const response = await route.fetch({ maxRedirects: 0 });
     const state = new URL(response.headers().location).searchParams.get('state');
@@ -225,7 +226,15 @@ test('OAuth login, folder upload, editing, selection, publishing and HTTPS Git s
   await expect(page.getByText('草稿已保存，发布后线上版本才会更新。')).toBeVisible();
   await page.getByRole('checkbox', { name: '发布 notes/dependency.typ' }).check();
   await page.getByLabel('notes/dependency.typ 的文章标题').fill('浏览器 Typst');
+  const compilation = page.waitForResponse(
+    (response) =>
+      /\/api\/sources\/[^/]+\/publish$/.test(response.url()) &&
+      response.request().method() === 'POST',
+    { timeout: 35_000 },
+  );
   await page.getByRole('button', { name: '发布所选文章' }).click();
+  const compiled = await compilation;
+  expect(compiled.ok(), await compiled.text()).toBe(true);
   await expect(page.getByText('发布成功，文章已出现在首页。')).toBeVisible();
   await page
     .locator('.file-row')
