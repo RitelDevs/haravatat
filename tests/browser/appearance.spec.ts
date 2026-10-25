@@ -30,7 +30,9 @@ test('display preference follows the system, persists and keeps PDF paper white'
   );
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByLabel('显示模式')).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+    .toBe(true);
 });
 
 test('display mode remains usable when local storage is blocked', async ({ page }) => {
