@@ -42,7 +42,12 @@ export async function createApp({ db, config, github, repositories, compiler }: 
     },
     hsts: config.secureCookies ? undefined : false,
   });
-  await app.register(rateLimit, { max: 300, timeWindow: '1 minute' });
+  await app.register(rateLimit, {
+    max: 300,
+    timeWindow: '1 minute',
+    // Registered route names prevent encoded URLs from bypassing API limits.
+    allowList: (request) => !/^\/(?:api|auth)(?:\/|$)/.test(request.routeOptions.url ?? ''),
+  });
   app.addHook('onRequest', async (request) => {
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
       if (

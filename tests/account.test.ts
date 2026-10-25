@@ -249,3 +249,18 @@ test('in-flight compilation, synchronization and stale source creation cannot re
     await close();
   }
 });
+
+test('static resources do not consume the API budget while API rate limits remain enforced', async () => {
+  const { db, close } = await testDatabase();
+  const app = await createApp({ db, config });
+  app.get('/assets/example.js', async () => 'script');
+  try {
+    for (let i = 0; i < 301; i++)
+      assert.equal((await app.inject('/assets/example.js')).statusCode, 200);
+    for (let i = 0; i < 300; i++) assert.equal((await app.inject('/api/health')).statusCode, 200);
+    assert.equal((await app.inject('/api/health')).statusCode, 429);
+  } finally {
+    await app.close();
+    await close();
+  }
+});
