@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 
 interface Entry {
   id: string;
@@ -15,8 +15,11 @@ export function ArticleOutline({
 }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [active, setActive] = useState('');
-  const [open, setOpen] = useState(() => matchMedia('(min-width: 1100px)').matches);
   const panel = useRef<HTMLDetailsElement>(null);
+  const mountPanel = useCallback((element: HTMLDetailsElement | null) => {
+    panel.current = element;
+    if (element) element.open = matchMedia('(min-width: 1100px)').matches;
+  }, []);
   useEffect(() => {
     const headings = Array.from(
       article.current?.querySelectorAll<HTMLElement>('[data-outline-title]') || [],
@@ -84,7 +87,7 @@ export function ArticleOutline({
               )
                 return;
               const compact = !matchMedia('(min-width: 1100px)').matches;
-              if (compact) setOpen(false);
+              if (compact && panel.current) panel.current.open = false;
               // Also reposition repeated clicks on the current fragment after disclosure changes.
               requestAnimationFrame(() => {
                 document.getElementById(entry.id)?.scrollIntoView();
@@ -101,12 +104,7 @@ export function ArticleOutline({
     </ol>
   );
   return (
-    <details
-      className="article-outline"
-      ref={panel}
-      open={open}
-      onToggle={(event) => setOpen(event.currentTarget.open)}
-    >
+    <details className="article-outline" ref={mountPanel}>
       <summary>章节导航</summary>
       <nav aria-label="侧栏目录">{list(entries)}</nav>
     </details>
