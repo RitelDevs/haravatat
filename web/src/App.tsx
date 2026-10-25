@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { BrowserRouter, Link, NavLink, Route, Routes } from 'react-router-dom';
 import { api, type User, errorMessage } from './api';
 import { Home, Article } from './Reading';
+import { Appearance } from './Appearance';
 import { Dashboard } from './Dashboard';
 const Auth = createContext<{
   user: User | null;
@@ -55,6 +56,7 @@ export function App() {
               </NavLink>
               <NavLink to="/dashboard">我的工作台</NavLink>
             </nav>
+            <Appearance />
             <div className="account">
               {loading ? (
                 <span className="muted">连接中…</span>
